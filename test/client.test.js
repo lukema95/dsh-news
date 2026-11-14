@@ -170,7 +170,7 @@ test('renders the empty loading state without throwing', () => {
     for (const child of node.children ?? []) walk(child)
   }
   walk(tree)
-  assert.equal(tabs.join('|'), 'view.all|view.featured|view.hot|view.papers')
+  assert.equal(tabs.join('|'), 'view.all|view.featured|view.hot|view.tutorials|view.papers')
   const classNames = collectClassNames(tree)
   assert.ok(classNames.has('sp-news-root'))
   assert.ok(classNames.has('sp-news-header'))

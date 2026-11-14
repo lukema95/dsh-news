@@ -9,10 +9,12 @@ with Chinese titles and summaries when available.
 - **Right sidebar tab**, next to Files / Browser / Terminal, so the conversation stays visible.
 - **Left rail entry** that opens the same feed as a full page in the main column, for reading
   without the conversation taking half the width. Both surfaces share one implementation.
-- **Four views** — 最新 (`all`, paginated with load-more), 精选 (`featured`), 热点 (`hot`, the
-  server's Top 20) and 论文 (`all&category=papers`) — plus a category filter filled from
-  `/api/meta`. Category views are warmed in the background and cached longer, because the
-  backend's keyword filter makes them slower than the plain timeline.
+- **Five views** — 新闻 (`all`, paginated with load-more), 精选 (`featured`), 热点 (`hot`, the
+  server's Top 20), 教程 (`all&category=tutorials`) and 论文 (`all&category=papers`) — plus a
+  category filter filled from `/api/meta`. The backend's plain `all` view excludes tutorials
+  and papers by policy (2026-11-15), so the two content types have their own tabs. Category
+  views are warmed in the background and cached longer, because the backend's keyword filter
+  makes them slower than the plain timeline.
 - **Rows** carry a publisher mark, source, relative time, multi-source count
   (`story_size > 1`), `热点` / `精选` badges when the item has them, and the model quality
   score (`llm_quality` × 100, the same number the site calls "AI 评分").

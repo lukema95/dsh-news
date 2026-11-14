@@ -24,16 +24,17 @@ window.__ModuleLoader__.load({
     const INTRO_KEY = 'dsh.shellpulse.news.intro.v1'
     const API = '/shellpulse'
     const SITE = 'https://www.shellpulse.xyz/?utm_source=dsh&utm_medium=plugin'
-    const VIEWS = ['all', 'featured', 'hot', 'papers']
+    const VIEWS = ['all', 'featured', 'hot', 'tutorials', 'papers']
 
     const COPY = {
       zh: {
         'type.title': 'AI 新闻',
         'guide.title': 'AI 新闻',
-        'guide.description': 'AI 信息流：热点、最新与精选',
+        'guide.description': 'AI 信息流：新闻、热点、教程与论文',
         'view.hot': '热点',
-        'view.all': '最新',
+        'view.all': '新闻',
         'view.featured': '精选',
+        'view.tutorials': '教程',
         'view.papers': '论文',
         'category.all': '全部分类',
         'action.refresh': '刷新',
@@ -80,10 +81,11 @@ window.__ModuleLoader__.load({
       en: {
         'type.title': 'AI news',
         'guide.title': 'AI news',
-        'guide.description': 'AI feed: trending, latest and featured',
+        'guide.description': 'AI feed: news, trending, tutorials and papers',
         'view.hot': 'Trending',
-        'view.all': 'Latest',
+        'view.all': 'News',
         'view.featured': 'Featured',
+        'view.tutorials': 'Tutorials',
         'view.papers': 'Papers',
         'category.all': 'All categories',
         'action.refresh': 'Refresh',
@@ -270,10 +272,11 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
     }
 
     function feedQuery(view, category, force = false) {
-      const apiView = view === 'papers' ? 'all' : view
+      const fixedCategory = view === 'papers' ? 'papers' : view === 'tutorials' ? 'tutorials' : ''
+      const apiView = fixedCategory ? 'all' : view
       const params = new URLSearchParams()
       params.set('view', apiView)
-      if (view === 'papers') params.set('category', 'papers')
+      if (fixedCategory) params.set('category', fixedCategory)
       else if (category) params.set('category', category)
       if (apiView === 'all') {
         params.set('limit', '15')
@@ -811,6 +814,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             // seconds, and the tab should feel instant the first time.
             const timer = setTimeout(() => {
               requestJson('/feed?view=all&category=papers&limit=15&include_total=false').catch(() => {})
+              requestJson('/feed?view=all&category=tutorials&limit=15&include_total=false').catch(() => {})
             }, 1500)
             return () => clearTimeout(timer)
           }, [])
@@ -1052,7 +1056,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
               'ul',
               { className: 'sp-news-list', ref: listRef },
               rows,
-              (view === 'all' || view === 'papers') && hasMore
+              (view === 'all' || view === 'tutorials' || view === 'papers') && hasMore
                 ? h(
                     'li',
                     { className: 'sp-news-more' },
@@ -1322,7 +1326,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
                 ),
               ),
               h('span', { className: 'sp-news-spacer' }),
-              categories.length > 0 && view !== 'papers'
+              categories.length > 0 && view !== 'tutorials' && view !== 'papers'
                 ? h(
                     'select',
                     {
