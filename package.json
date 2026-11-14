@@ -1,0 +1,67 @@
+{
+  "name": "@lukema95/dsh-news",
+  "version": "0.1.0",
+  "description": "ShellPulse AI news in the DeepSeek Harness right sidebar: hot ranking, timeline and featured picks with Chinese titles and summaries.",
+  "license": "MIT",
+  "author": {
+    "name": "lukema95",
+    "url": "https://github.com/lukema95"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukema95/dsh-news.git"
+  },
+  "homepage": "https://github.com/lukema95/dsh-news#readme",
+  "bugs": {
+    "url": "https://github.com/lukema95/dsh-news/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "ai-news",
+    "news",
+    "shellpulse"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.png",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.png",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  }
+}

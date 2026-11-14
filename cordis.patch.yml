@@ -1,0 +1,6 @@
+- insert:
+    - id: shellpulse-news
+      name: '@lukema95/dsh-news'
+      config:
+        apiBase: https://api.shellpulse.xyz
+        cacheSeconds: 45
