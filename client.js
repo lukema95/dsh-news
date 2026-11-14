@@ -11,13 +11,13 @@
  */
 
 window.__ModuleLoader__.load({
-  id: '@lukema95/dsh-news',
+  id: '@lukema/dsh-news',
   factory(require) {
     const React = require('react')
     const h = React.createElement
     const { useCallback, useEffect, useMemo, useRef, useState } = React
 
-    const TAB_ID = '@lukema95/dsh-news'
+    const TAB_ID = '@lukema/dsh-news'
     const PANEL_ID = 'shellpulse.news'
     const KIND = 'shellpulse-news'
     const NAMESPACE = 'shellpulseNews'

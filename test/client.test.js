@@ -78,7 +78,7 @@ function collectClassNames(node, found = new Set()) {
 
 test('registers a right-sidebar tab type and its body', () => {
   const module = loadClient()
-  assert.equal(module.id, '@lukema95/dsh-news')
+  assert.equal(module.id, '@lukema/dsh-news')
 
   const captured = { types: [], slots: [], locales: [] }
   const ctx = {
@@ -120,7 +120,7 @@ test('registers a right-sidebar tab type and its body', () => {
 
   assert.equal(captured.types.length, 1)
   const type = captured.types[0]
-  assert.equal(type.id, '@lukema95/dsh-news')
+  assert.equal(type.id, '@lukema/dsh-news')
   assert.equal(type.kind, 'shellpulse-news')
   assert.equal(type.priority, 'extension')
   assert.equal(type.guide.length, 1)

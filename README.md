@@ -115,7 +115,7 @@ reload the page. Open it from:
 ```yaml
 - insert:
     - id: shellpulse-news
-      name: '@lukema95/dsh-news'
+      name: '@lukema/dsh-news'
       config:
         apiBase: https://api.shellpulse.xyz   # another deployment, or http://127.0.0.1:8000
         cacheSeconds: 45                      # 0 disables the Host cache (max 600)
