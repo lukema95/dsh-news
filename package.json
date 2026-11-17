@@ -1,6 +1,6 @@
 {
   "name": "@lukema/dsh-news",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ShellPulse AI news in the DeepSeek Harness right sidebar: hot ranking, timeline and featured picks with Chinese titles and summaries.",
   "license": "MIT",
   "author": {

@@ -12,9 +12,10 @@ with Chinese titles and summaries when available.
 - **Five views** — 新闻 (`all`, paginated with load-more), 精选 (`featured`), 热点 (`hot`, the
   server's Top 20), 教程 (`all&category=tutorials`) and 论文 (`all&category=papers`) — plus a
   category filter filled from `/api/meta`. The backend's plain `all` view excludes tutorials
-  and papers by policy (2026-11-15), so the two content types have their own tabs. Category
-  views are warmed in the background and cached longer, because the backend's keyword filter
-  makes them slower than the plain timeline.
+  and papers by policy (2026-11-15), so the two content types have their own tabs. The papers
+  tab defaults to **arXiv** (`source_prefix=arxiv-`) and can switch to all papers or
+  Hugging Face Daily Papers. Category views are warmed in the background and cached longer,
+  because the backend's keyword filter makes them slower than the plain timeline.
 - **Rows** carry a publisher mark, source, relative time, multi-source count
   (`story_size > 1`), `热点` / `精选` badges when the item has them, and the model quality
   score (`llm_quality` × 100, the same number the site calls "AI 评分").
