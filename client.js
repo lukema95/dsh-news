@@ -36,6 +36,9 @@ window.__ModuleLoader__.load({
         'view.featured': '精选',
         'view.tutorials': '教程',
         'view.papers': '论文',
+        'paperSource.arxiv': 'arXiv',
+        'paperSource.all': '全部论文',
+        'paperSource.hf': 'Hugging Face',
         'category.all': '全部分类',
         'action.refresh': '刷新',
         'action.retry': '重试',
@@ -87,6 +90,9 @@ window.__ModuleLoader__.load({
         'view.featured': 'Featured',
         'view.tutorials': 'Tutorials',
         'view.papers': 'Papers',
+        'paperSource.arxiv': 'arXiv',
+        'paperSource.all': 'All papers',
+        'paperSource.hf': 'Hugging Face',
         'category.all': 'All categories',
         'action.refresh': 'Refresh',
         'action.retry': 'Retry',
@@ -271,13 +277,17 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
       return /^https?:\/\/(?:www\.)?arxiv\.org\/(?:abs|pdf)\//i.test(String(url || ''))
     }
 
-    function feedQuery(view, category, force = false) {
+    function feedQuery(view, category, force = false, paperSource = 'arxiv') {
       const fixedCategory = view === 'papers' ? 'papers' : view === 'tutorials' ? 'tutorials' : ''
       const apiView = fixedCategory ? 'all' : view
       const params = new URLSearchParams()
       params.set('view', apiView)
       if (fixedCategory) params.set('category', fixedCategory)
       else if (category) params.set('category', category)
+      if (view === 'papers') {
+        if (paperSource === 'arxiv') params.set('source_prefix', 'arxiv-')
+        else if (paperSource === 'hf') params.set('source_id', 'hf-daily-papers')
+      }
       if (apiView === 'all') {
         params.set('limit', '15')
         params.set('include_total', 'false')
@@ -715,6 +725,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
         function NewsPanel({ mode, inputActions } = {}) {
           const [view, setView] = useState('all')
           const [category, setCategory] = useState('')
+          const [paperSource, setPaperSource] = useState('arxiv')
           const [items, setItems] = useState([])
           const [loading, setLoading] = useState(true)
           const [error, setError] = useState(null)
@@ -762,6 +773,14 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             setCategory(value)
           }
 
+          const selectPaperSource = (value) => {
+            if (value === paperSource) return
+            setItems([])
+            setHasMore(false)
+            setLoading(true)
+            setPaperSource(value)
+          }
+
           const load = useCallback(async (force = false) => {
             const id = ++runId.current
             if (abortRef.current) abortRef.current.abort()
@@ -770,7 +789,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             setLoading(true)
             setError(null)
             try {
-              const data = await requestJson(feedQuery(view, category, force), controller.signal)
+              const data = await requestJson(feedQuery(view, category, force, paperSource), controller.signal)
               if (id !== runId.current) return
               setItems(Array.isArray(data.items) ? data.items : [])
               setHasMore(Boolean(data.has_more))
@@ -784,14 +803,14 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             } finally {
               if (id === runId.current) setLoading(false)
             }
-          }, [view, category])
+          }, [view, category, paperSource])
 
           const loadMore = useCallback(async () => {
             if (loadingMore || !hasMore) return
             const id = runId.current
             setLoadingMore(true)
             try {
-              const data = await requestJson(`${feedQuery(view, category)}&offset=${items.length}`)
+              const data = await requestJson(`${feedQuery(view, category, false, paperSource)}&offset=${items.length}`)
               if (id !== runId.current) return
               setItems((current) => [...current, ...(Array.isArray(data.items) ? data.items : [])])
               setHasMore(Boolean(data.has_more))
@@ -800,7 +819,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             } finally {
               if (id === runId.current) setLoadingMore(false)
             }
-          }, [view, category, items.length, hasMore, loadingMore])
+          }, [view, category, paperSource, items.length, hasMore, loadingMore])
 
           useEffect(() => {
             load()
@@ -1326,21 +1345,34 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
                 ),
               ),
               h('span', { className: 'sp-news-spacer' }),
-              categories.length > 0 && view !== 'tutorials' && view !== 'papers'
+              view === 'papers'
                 ? h(
                     'select',
                     {
                       className: 'sp-news-select',
-                      value: category,
-                      'aria-label': t('category.all'),
-                      onChange: (event) => selectCategory(event.target.value),
+                      value: paperSource,
+                      'aria-label': t('view.papers'),
+                      onChange: (event) => selectPaperSource(event.target.value),
                     },
-                    h('option', { value: '' }, t('category.all')),
-                    categories
-                      .filter((entry) => entry && entry.key)
-                      .map((entry) => h('option', { key: entry.key, value: entry.key }, entry.label || entry.key)),
+                    h('option', { value: 'arxiv' }, t('paperSource.arxiv')),
+                    h('option', { value: 'all' }, t('paperSource.all')),
+                    h('option', { value: 'hf' }, t('paperSource.hf')),
                   )
-                : null,
+                : categories.length > 0 && view !== 'tutorials'
+                  ? h(
+                      'select',
+                      {
+                        className: 'sp-news-select',
+                        value: category,
+                        'aria-label': t('category.all'),
+                        onChange: (event) => selectCategory(event.target.value),
+                      },
+                      h('option', { value: '' }, t('category.all')),
+                      categories
+                        .filter((entry) => entry && entry.key)
+                        .map((entry) => h('option', { key: entry.key, value: entry.key }, entry.label || entry.key)),
+                    )
+                  : null,
               h(
                 'button',
                 { type: 'button', className: 'sp-news-icon', onClick: load, disabled: loading, 'aria-label': t('action.refresh'), title: t('action.refresh') },

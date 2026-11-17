@@ -655,6 +655,9 @@ function filterFeedParams(input) {
       case 'source_id':
         if (!ID_PATTERN.test(value)) return null
         break
+      case 'source_prefix':
+        if (!KEY_PATTERN.test(value)) return null
+        break
       case 'hours': {
         const hours = Number(value)
         if (!Number.isInteger(hours) || hours < 1 || hours > 720) return null

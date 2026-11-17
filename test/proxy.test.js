@@ -69,6 +69,21 @@ test('clamps limit and keeps the documented query', async () => {
   assert.equal(requested, 'https://example.test/api/feed?view=hot&limit=50&lang=zh')
 })
 
+test('keeps the paper source prefix and rejects malformed prefixes', async () => {
+  const handler = mount()
+  let requested
+  await withFetch(
+    async (url) => {
+      requested = url
+      return new Response('{"items":[]}', { status: 200, headers: { 'content-type': 'application/json' } })
+    },
+    () => call(handler, '/shellpulse/feed?view=all&category=papers&source_prefix=arxiv-'),
+  )
+  assert.equal(requested, 'https://example.test/api/feed?view=all&category=papers&source_prefix=arxiv-')
+  const bad = await call(handler, '/shellpulse/feed?view=all&source_prefix=bad%20prefix')
+  assert.equal(bad.status, 400)
+})
+
 test('rejects unknown or malformed parameters before any request', async () => {
   const handler = mount()
   let called = false
