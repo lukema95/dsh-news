@@ -209,6 +209,31 @@ test('renders fenced code, headings, lists and inline markdown', () => {
   assert.equal(link.props.rel, 'noopener noreferrer')
 })
 
+test('renders GitHub tables and CJK number lists', () => {
+  const plugin = loadClient().factory(() => fakeReact())
+  const blocks = plugin.__markdown(
+    '| 组件 | 格式 |\n| --- | :---: |\n| 鼠标 | ΔX, ΔY |\n| 键盘 | 256 维二进制 |\n\n1.动作空间\n2. 训练语料库',
+  )
+
+  assert.equal(blocks.map((node) => node.type).join(','), 'div,ol')
+  const table = blocks[0].children[0]
+  assert.equal(table.type, 'table')
+  const body = table.children[1]
+  assert.equal(body.children.length, 2)
+  const firstRow = body.children[0]
+  assert.equal(textOf(firstRow.children[0]), '鼠标')
+  assert.equal(firstRow.children[1].props.style.textAlign, 'center')
+  assert.equal(firstRow.children[0].props.style.textAlign, 'left')
+
+  assert.equal(blocks[1].children.length, 2)
+  assert.equal(textOf(blocks[1].children[0]), '动作空间')
+  assert.equal(textOf(blocks[1].children[1]), '训练语料库')
+
+  const mixed = plugin.__markdown('前言\n\n| a |\n| --- |\n| 1 |\n\n结尾')
+  assert.equal(mixed.map((node) => node.type).join(','), 'p,div,p')
+  assert.equal(textOf(mixed[2]), '结尾')
+})
+
 test('never turns non-http links into anchors', () => {
   const plugin = loadClient().factory(() => fakeReact())
   const blocks = plugin.__markdown('[x](javascript:alert(1))')
@@ -238,4 +263,38 @@ test('keeps the paper style local: no imports, no remote url()', () => {
   assert.equal(cleaned.includes('evil.test'), false)
   assert.ok(cleaned.includes('arxiv.org/a.png'))
   assert.ok(cleaned.includes('/shellpulse/img?u='))
+})
+
+test('papers view asks for every arxiv source and no keyword category', () => {
+  const plugin = loadClient().factory(() => fakeReact())
+  const query = (view, category) => new URLSearchParams(plugin.__feedQuery(view, category, false).split('?')[1])
+
+  const papers = query('papers', '')
+  assert.equal(papers.get('view'), 'all')
+  assert.equal(papers.get('source_prefix'), 'arxiv-')
+  assert.equal(papers.get('category'), null)
+  assert.equal(papers.get('limit'), '15')
+
+  const tutorials = query('tutorials', '')
+  assert.equal(tutorials.get('category'), 'tutorials')
+  assert.equal(tutorials.get('source_prefix'), null)
+
+  const hot = query('hot', 'ai')
+  assert.equal(hot.get('view'), 'hot')
+  assert.equal(hot.get('category'), 'ai')
+})
+
+test('picks the first publisher image out of the summary', () => {
+  const plugin = loadClient().factory(() => fakeReact())
+
+  const markdown = plugin.__thumbOf({ summary: '开头\n\n![图注](https://cdn.test/a.png)\n\n结尾' })
+  assert.equal(markdown.src, 'https://cdn.test/a.png')
+  assert.equal(markdown.alt, '图注')
+
+  const html = plugin.__thumbOf({ summary: '<p>x</p><img src="https://img.test/b.jpg" alt="b">' })
+  assert.equal(html.src, 'https://img.test/b.jpg')
+
+  assert.equal(plugin.__thumbOf({ summary: '只有文字，没有配图' }), null)
+  assert.equal(plugin.__thumbOf({}), null)
+  assert.equal(plugin.__thumbOf({ summary: '![相对路径](/a.png)' }), null)
 })

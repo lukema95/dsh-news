@@ -36,10 +36,6 @@ window.__ModuleLoader__.load({
         'view.featured': '精选',
         'view.tutorials': '教程',
         'view.papers': '论文',
-        'paperSource.label': '论文来源',
-        'paperSource.arxiv': 'arXiv',
-        'paperSource.all': '全部论文',
-        'paperSource.hf': 'Hugging Face',
         'category.all': '全部分类',
         'action.refresh': '刷新',
         'action.retry': '重试',
@@ -91,10 +87,6 @@ window.__ModuleLoader__.load({
         'view.featured': 'Featured',
         'view.tutorials': 'Tutorials',
         'view.papers': 'Papers',
-        'paperSource.label': 'Paper source',
-        'paperSource.arxiv': 'arXiv',
-        'paperSource.all': 'All papers',
-        'paperSource.hf': 'Hugging Face',
         'category.all': 'All categories',
         'action.refresh': 'Refresh',
         'action.retry': 'Retry',
@@ -171,19 +163,28 @@ window.__ModuleLoader__.load({
 .sp-news-row{display:block;width:100%;padding:15px 16px 17px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .12s ease}
 .sp-news-row:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .sp-news-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 7px;margin:0 0 7px;color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.4;min-width:0}
-.sp-news-badge{display:inline-flex;align-items:center;height:15px;padding:0 5px;border-radius:4px;font-size:10px;line-height:1;font-weight:500;letter-spacing:.02em;white-space:nowrap}
-.sp-news-badge.is-hot{color:var(--dsw-alias-brand-text,var(--dsw-alias-label-primary));background:var(--dsw-alias-interactive-bg-hover-accent,var(--dsw-alias-bg-layer-2))}
-.sp-news-badge.is-featured{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2)}
+/* Solid pills, not tinted labels: both flags have to read at a glance in either
+   theme. The label-primary / label-primary-inverted pair is flipped by the theme,
+   so 精选 is a near-black pill in light mode and a near-white one in dark mode;
+   热点 keeps the fixed amber fill with near-black text, legible on both. */
+.sp-news-badge{display:inline-flex;align-items:center;height:18px;padding:0 7px;border:0;border-radius:999px;font-size:10.5px;line-height:1;font-weight:600;letter-spacing:.01em;white-space:nowrap;flex:0 0 auto}
+.sp-news-badge.is-hot{color:var(--dsw-static-neutral-bluish-900,#1b1b1c);background:var(--dsw-alias-state-warn-primary,#f59e0b);box-shadow:inset 0 0 0 1px rgb(0 0 0 / .08)}
+.sp-news-badge.is-featured{color:var(--dsw-alias-label-primary-inverted,#fff);background:var(--dsw-alias-label-primary,#1b1b1c)}
+.sp-news-root.is-page .sp-news-badge{height:19px;font-size:11px;padding:0 8px}
 .sp-news-src{display:inline-flex;align-items:center;gap:5px;min-width:0}
 .sp-news-src-img{width:14px;height:14px;border-radius:3px;object-fit:cover;flex:0 0 auto;background:var(--dsw-alias-bg-layer-2)}
 .sp-news-src-letter{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:3px;flex:0 0 auto;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary);font-size:9px;font-weight:600;line-height:1}
 .sp-news-src-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;color:var(--dsw-alias-label-secondary)}
 .sp-news-dot{color:var(--dsw-alias-label-tertiary)}
 .sp-news-score{margin-left:auto;color:var(--dsw-alias-label-tertiary);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.01em}
+.sp-news-flex{display:flex;gap:12px;align-items:flex-start;margin-top:6px}
+.sp-news-main{flex:1 1 auto;min-width:0}
+.sp-news-thumb{flex:0 0 auto;width:92px;height:52px;border-radius:6px;object-fit:cover;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1)}
+.sp-news-root.is-page .sp-news-thumb{width:132px;height:74px;border-radius:8px}
 .sp-news-headline{display:flex;align-items:baseline;gap:8px}
 .sp-news-rank{flex:0 0 auto;min-width:18px;color:var(--dsw-alias-label-tertiary);font-size:14px;font-weight:400;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .sp-news-title{flex:1 1 auto;font-size:14.5px;font-weight:500;line-height:1.5;letter-spacing:.005em;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere}
-.sp-news-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-top:6px;color:var(--dsw-alias-label-secondary);font-size:12.5px;line-height:1.65}
+.sp-news-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:var(--dsw-alias-label-secondary);font-size:12.5px;line-height:1.65}
 .sp-news-detail{margin:2px 16px 16px;padding:12px 14px;border-radius:10px;background:var(--dsw-alias-bg-layer-1)}
 .sp-news-detail p{margin:0 0 10px;color:var(--dsw-alias-label-secondary);font-size:12.5px;line-height:1.65}
 .sp-news-actions{display:flex;gap:8px;align-items:center}
@@ -255,6 +256,11 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
 .sp-md-img{display:block;max-width:100%;height:auto;margin:14px 0;border-radius:8px;background:var(--dsw-alias-bg-layer-1)}
 .sp-md-img-fallback{display:inline-block;margin:6px 0;color:var(--dsw-alias-label-tertiary);font-size:11px}
 .sp-md-hr{margin:20px 0;border:0;border-top:1px solid var(--dsw-alias-border-l1)}
+.sp-md-table-wrap{margin:0 0 16px;overflow-x:auto}
+.sp-md-table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.65}
+.sp-md-table th,.sp-md-table td{padding:7px 10px;border:1px solid var(--dsw-alias-border-l1);vertical-align:top;white-space:normal;overflow-wrap:anywhere}
+.sp-md-table th{background:var(--dsw-alias-bg-layer-1);font-weight:600;color:var(--dsw-alias-label-primary)}
+.sp-md-table td{color:var(--dsw-alias-label-secondary)}
 .sp-md-link{color:var(--dsw-alias-label-primary);text-decoration:underline;text-underline-offset:2px}
 .sp-md-link:hover{color:var(--dsw-alias-brand-text,var(--dsw-alias-label-primary))}
 .sp-news-progress{position:relative;flex:0 0 auto;height:2px;overflow:hidden;background:var(--dsw-alias-bg-layer-1)}
@@ -279,17 +285,21 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
       return /^https?:\/\/(?:www\.)?arxiv\.org\/(?:abs|pdf)\//i.test(String(url || ''))
     }
 
-    function feedQuery(view, category, force = false, paperSource = 'arxiv') {
-      const fixedCategory = view === 'papers' ? 'papers' : view === 'tutorials' ? 'tutorials' : ''
-      const apiView = fixedCategory ? 'all' : view
+    /**
+     * The papers tab is the arXiv feed and nothing else: `source_prefix` selects
+     * every `arxiv-*` source (including future categories), while `category` is
+     * deliberately absent — the backend reads it as a keyword filter and drops
+     * roughly a third of the arXiv items it is applied to.
+     */
+    function feedQuery(view, category, force = false) {
+      const papers = view === 'papers'
+      const fixedCategory = view === 'tutorials' ? 'tutorials' : ''
+      const apiView = papers || fixedCategory ? 'all' : view
       const params = new URLSearchParams()
       params.set('view', apiView)
-      if (fixedCategory) params.set('category', fixedCategory)
+      if (papers) params.set('source_prefix', 'arxiv-')
+      else if (fixedCategory) params.set('category', fixedCategory)
       else if (category) params.set('category', category)
-      if (view === 'papers') {
-        if (paperSource === 'arxiv') params.set('source_prefix', 'arxiv-')
-        else if (paperSource === 'hf') params.set('source_id', 'hf-daily-papers')
-      }
       if (apiView === 'all') {
         params.set('limit', '15')
         params.set('include_total', 'false')
@@ -299,13 +309,54 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
       return `/feed?${params.toString()}`
     }
 
+    /**
+     * First publisher image carried by the item's summary. The site extracts the
+     * same markdown/HTML image for its list thumbnails; the API has no dedicated
+     * image field, so the summary is the only source.
+     */
+    const SUMMARY_MD_IMAGE = /!\[([^\]\n]*)\]\((https?:\/\/[^)\s]+)\)/
+    const SUMMARY_HTML_IMAGE = /<img\b[^>]*\ssrc=["'](https?:\/\/[^"']+)["']/i
+    function thumbOf(item) {
+      const raw = typeof item.summary === 'string' ? item.summary : ''
+      if (raw === '') return null
+      const markdown = SUMMARY_MD_IMAGE.exec(raw)
+      if (markdown !== null) return { src: markdown[2], alt: markdown[1] }
+      const html = SUMMARY_HTML_IMAGE.exec(raw)
+      if (html !== null) return { src: html[1], alt: '' }
+      return null
+    }
+
+    /** List thumbnail; a blocked or broken image simply disappears. */
+    function NewsThumb({ src, alt }) {
+      const [failed, setFailed] = useState(false)
+      if (failed) return null
+      return h('img', {
+        className: 'sp-news-thumb',
+        src,
+        alt: alt || '',
+        loading: 'lazy',
+        referrerPolicy: 'no-referrer',
+        onError: () => setFailed(true),
+      })
+    }
+
     function titleOf(item) {
       return item.title_zh && item.title_zh.trim() !== '' ? item.title_zh : item.title
     }
 
+    /**
+     * Row summary: the model summary when present, otherwise the publisher text.
+     * Embedded image markup is dropped — the row shows the picture as a thumbnail.
+     */
     function summaryOf(item) {
       const summary = item.llm_summary && item.llm_summary.trim() !== '' ? item.llm_summary : item.summary
-      return summary ? summary.trim() : ''
+      if (!summary) return ''
+      return String(summary)
+        .replace(/!\[[^\]\n]*\]\([^)\n]*\)/g, ' ')
+        .replace(/<img\b[^>]*>/gi, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\s*\n\s*/g, ' ')
+        .trim()
     }
 
     function newestPublishedAt(items) {
@@ -402,8 +453,8 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
 
     /**
      * Small block-level markdown renderer: fences, headings, lists, quotes,
-     * rules and paragraphs. React elements only — no HTML is ever interpreted,
-     * so article text cannot inject markup.
+     * GitHub tables, rules and paragraphs. React elements only — no HTML is ever
+     * interpreted, so article text cannot inject markup.
      */
     function renderMarkdown(source) {
       const lines = String(source).replace(/\r\n?/g, '\n').split('\n')
@@ -411,10 +462,27 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
       let index = 0
       let key = 0
       const isBullet = (line) => /^\s*[-*+]\s+/.test(line)
-      const isOrdered = (line) => /^\s*\d+[.)]\s+/.test(line)
+      // CJK copy often writes "1.动作空间" without a space after the marker.
+      const isOrdered = (line) => /^\s*\d{1,3}[.)．、](?:\s+|(?=[^\d\s]))/.test(line)
       const isFence = (line) => /^\s*```/.test(line)
       const isHeading = (line) => /^#{1,6}\s+/.test(line)
       const isQuote = (line) => /^\s*>\s?/.test(line)
+      const cellsOf = (line) =>
+        line
+          .trim()
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((cell) => cell.trim())
+      const isTableRow = (line) => /^\s*\|.*\|\s*$/.test(line)
+      const isTableDivider = (line) => cellsOf(line).every((cell) => /^:?-{2,}:?$/.test(cell))
+      const startsTable = (at) => at + 1 < lines.length && isTableRow(lines[at]) && isTableDivider(lines[at + 1])
+      const alignOf = (cell) => {
+        const left = cell.startsWith(':')
+        const right = cell.endsWith(':')
+        if (left && right) return 'center'
+        return right ? 'right' : 'left'
+      }
 
       while (index < lines.length) {
         const line = lines[index]
@@ -464,11 +532,65 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
           )
           continue
         }
+        if (startsTable(index)) {
+          const header = cellsOf(lines[index])
+          const aligns = cellsOf(lines[index + 1]).map(alignOf)
+          index += 2
+          const rows = []
+          while (index < lines.length && isTableRow(lines[index])) {
+            rows.push(cellsOf(lines[index]))
+            index += 1
+          }
+          const tableKey = key++
+          blocks.push(
+            h(
+              'div',
+              { key: tableKey, className: 'sp-md-table-wrap' },
+              h(
+                'table',
+                { className: 'sp-md-table' },
+                h(
+                  'thead',
+                  {},
+                  h(
+                    'tr',
+                    {},
+                    header.map((cell, column) =>
+                      h(
+                        'th',
+                        { key: column, style: { textAlign: aligns[column] ?? 'left' } },
+                        renderInline(cell, `th${tableKey}-${column}`),
+                      ),
+                    ),
+                  ),
+                ),
+                h(
+                  'tbody',
+                  {},
+                  rows.map((row, rowIndex) =>
+                    h(
+                      'tr',
+                      { key: rowIndex },
+                      header.map((_, column) =>
+                        h(
+                          'td',
+                          { key: column, style: { textAlign: aligns[column] ?? 'left' } },
+                          renderInline(row[column] ?? '', `td${tableKey}-${rowIndex}-${column}`),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          )
+          continue
+        }
         if (isBullet(line) || isOrdered(line)) {
           const ordered = isOrdered(line)
           const items = []
           while (index < lines.length && (ordered ? isOrdered(lines[index]) : isBullet(lines[index]))) {
-            items.push(lines[index].replace(ordered ? /^\s*\d+[.)]\s+/ : /^\s*[-*+]\s+/, ''))
+            items.push(lines[index].replace(ordered ? /^\s*\d{1,3}[.)．、]\s*/ : /^\s*[-*+]\s+/, ''))
             index += 1
           }
           blocks.push(
@@ -488,7 +610,8 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
           !isHeading(lines[index]) &&
           !isQuote(lines[index]) &&
           !isBullet(lines[index]) &&
-          !isOrdered(lines[index])
+          !isOrdered(lines[index]) &&
+          !startsTable(index)
         ) {
           paragraph.push(lines[index])
           index += 1
@@ -500,13 +623,16 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
       return blocks
     }
 
-    /** Origin favicon as the second candidate; no third-party favicon service. */
-    function faviconFor(url) {
+    /**
+     * Publisher mark. Prefers the icon the API carries, then the Host's icon
+     * route (it resolves `<link rel="icon">` and caches the bytes), and finally
+     * the source initial. No third-party favicon service is involved.
+     */
+    function iconProxy(url) {
       try {
         const parsed = new URL(url)
         if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
-        if (/^(localhost|127\.|0\.0\.0\.0|\[)/.test(parsed.hostname)) return null
-        return `${parsed.origin}/favicon.ico`
+        return `/shellpulse/icon?u=${encodeURIComponent(parsed.origin)}`
       } catch {
         return null
       }
@@ -677,7 +803,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
     }
 
     function SourceMark({ icon, url, name }) {
-      const candidates = [icon, faviconFor(url)].filter(Boolean)
+      const candidates = [icon, iconProxy(url)].filter(Boolean)
       const [index, setIndex] = useState(0)
       const src = candidates[index]
       if (!src) {
@@ -720,6 +846,8 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
     return {
       inject: ['slots', 'locale', 'sidebarRight', 'sidebarRightTabs'],
       __markdown: renderMarkdown,
+      __feedQuery: feedQuery,
+      __thumbOf: thumbOf,
       __sanitizePaperCss: sanitizePaperCss,
       apply(ctx) {
         const t = ctx.locale.bind(NAMESPACE)
@@ -727,7 +855,6 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
         function NewsPanel({ mode, inputActions } = {}) {
           const [view, setView] = useState('all')
           const [category, setCategory] = useState('')
-          const [paperSource, setPaperSource] = useState('arxiv')
           const [items, setItems] = useState([])
           const [loading, setLoading] = useState(true)
           const [error, setError] = useState(null)
@@ -775,14 +902,6 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             setCategory(value)
           }
 
-          const selectPaperSource = (value) => {
-            if (value === paperSource) return
-            setItems([])
-            setHasMore(false)
-            setLoading(true)
-            setPaperSource(value)
-          }
-
           const load = useCallback(async (force = false) => {
             const id = ++runId.current
             if (abortRef.current) abortRef.current.abort()
@@ -791,7 +910,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             setLoading(true)
             setError(null)
             try {
-              const data = await requestJson(feedQuery(view, category, force, paperSource), controller.signal)
+              const data = await requestJson(feedQuery(view, category, force), controller.signal)
               if (id !== runId.current) return
               setItems(Array.isArray(data.items) ? data.items : [])
               setHasMore(Boolean(data.has_more))
@@ -805,14 +924,14 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             } finally {
               if (id === runId.current) setLoading(false)
             }
-          }, [view, category, paperSource])
+          }, [view, category])
 
           const loadMore = useCallback(async () => {
             if (loadingMore || !hasMore) return
             const id = runId.current
             setLoadingMore(true)
             try {
-              const data = await requestJson(`${feedQuery(view, category, false, paperSource)}&offset=${items.length}`)
+              const data = await requestJson(`${feedQuery(view, category)}&offset=${items.length}`)
               if (id !== runId.current) return
               setItems((current) => [...current, ...(Array.isArray(data.items) ? data.items : [])])
               setHasMore(Boolean(data.has_more))
@@ -821,7 +940,7 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             } finally {
               if (id === runId.current) setLoadingMore(false)
             }
-          }, [view, category, paperSource, items.length, hasMore, loadingMore])
+          }, [view, category, items.length, hasMore, loadingMore])
 
           useEffect(() => {
             load()
@@ -1005,6 +1124,8 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
             const isHot = view === 'hot' || item.hot_rank != null
             const isFeatured = item.is_featured === true
             const score = item.llm_quality == null ? null : Math.round(item.llm_quality * 100)
+            const thumb = thumbOf(item)
+            const summary = summaryOf(item)
             return h(
               'li',
               { key: item.id, className: 'sp-news-item' },
@@ -1049,7 +1170,16 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
                   view === 'hot' ? h('span', { className: 'sp-news-rank' }, String(item.hot_rank || index + 1)) : null,
                   h('span', { className: 'sp-news-title' }, titleOf(item)),
                 ),
-                summaryOf(item) ? h('div', { className: 'sp-news-summary' }, summaryOf(item)) : null,
+                summary === '' && thumb === null
+                  ? null
+                  : h(
+                      'div',
+                      { className: 'sp-news-flex' },
+                      summary === ''
+                        ? null
+                        : h('div', { className: 'sp-news-main' }, h('div', { className: 'sp-news-summary' }, summary)),
+                      thumb === null ? null : h(NewsThumb, { src: thumb.src, alt: thumb.alt }),
+                    ),
               ),
             )
           })
@@ -1347,34 +1477,21 @@ h5.sp-md-h,h6.sp-md-h{font-size:13px}
                 ),
               ),
               h('span', { className: 'sp-news-spacer' }),
-              view === 'papers'
+              categories.length > 0 && view !== 'tutorials' && view !== 'papers'
                 ? h(
                     'select',
                     {
                       className: 'sp-news-select',
-                      value: paperSource,
-                      'aria-label': t('paperSource.label'),
-                      onChange: (event) => selectPaperSource(event.target.value),
+                      value: category,
+                      'aria-label': t('category.all'),
+                      onChange: (event) => selectCategory(event.target.value),
                     },
-                    h('option', { value: 'arxiv' }, t('paperSource.arxiv')),
-                    h('option', { value: 'all' }, t('paperSource.all')),
-                    h('option', { value: 'hf' }, t('paperSource.hf')),
+                    h('option', { value: '' }, t('category.all')),
+                    categories
+                      .filter((entry) => entry && entry.key)
+                      .map((entry) => h('option', { key: entry.key, value: entry.key }, entry.label || entry.key)),
                   )
-                : categories.length > 0 && view !== 'tutorials'
-                  ? h(
-                      'select',
-                      {
-                        className: 'sp-news-select',
-                        value: category,
-                        'aria-label': t('category.all'),
-                        onChange: (event) => selectCategory(event.target.value),
-                      },
-                      h('option', { value: '' }, t('category.all')),
-                      categories
-                        .filter((entry) => entry && entry.key)
-                        .map((entry) => h('option', { key: entry.key, value: entry.key }, entry.label || entry.key)),
-                    )
-                  : null,
+                : null,
               h(
                 'button',
                 { type: 'button', className: 'sp-news-icon', onClick: load, disabled: loading, 'aria-label': t('action.refresh'), title: t('action.refresh') },

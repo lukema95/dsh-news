@@ -7,8 +7,13 @@
  * proxy on the Host's own web server, so the panel only talks to `/shellpulse/*`.
  *
  * The proxy is deliberately narrow: fixed upstream, fixed routes, whitelisted
- * query parameters, GET only. It must never become a general-purpose fetcher.
+ * query parameters, GET only. The one route that reads a publisher directly is
+ * `/shellpulse/icon`: it fetches that publisher's own favicon (public hosts
+ * only, no redirects off the public web, image responses only) because a
+ * browser cannot read `<link rel="icon">` across origins.
  */
+
+import { lookup as dnsLookup } from 'node:dns/promises'
 
 const DEFAULT_API_BASE = 'https://api.shellpulse.xyz'
 const DEFAULT_CACHE_SECONDS = 45
@@ -25,6 +30,18 @@ const IMAGE_HOSTS = new Set(['ar5iv.labs.arxiv.org', 'arxiv.org', 'www.arxiv.org
 const IMAGE_MAX_BYTES = 8 * 1024 * 1024
 const IMAGE_CACHE_TTL = 60 * 60 * 1000
 const IMAGE_CACHE_LIMIT = 60
+const ICON_MAX_BYTES = 256 * 1024
+const ICON_PAGE_MAX_BYTES = 1024 * 1024
+const ICON_CACHE_TTL = 7 * 24 * 60 * 60 * 1000
+const ICON_MISS_TTL = 10 * 60 * 1000
+const ICON_CACHE_LIMIT = 80
+const ICON_TIMEOUT_MS = 8000
+const ICON_REDIRECT_LIMIT = 3
+// Publishers answer a bot-shaped UA with 403 far more often than a browser one;
+// this proxy only ever reads a page the panel already shows, so it identifies
+// as an ordinary browser and nothing more.
+const BROWSER_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const BUILD = '0.9.0'
 
 const FEED_VIEWS = new Set(['all', 'hot', 'featured'])
@@ -32,12 +49,209 @@ const LANGS = new Set(['zh', 'en'])
 const KEY_PATTERN = /^[A-Za-z0-9_-]{1,64}$/
 const ID_PATTERN = /^[A-Za-z0-9._-]{1,80}$/
 
+/** Loopback, link-local, CGNAT and RFC 1918 literals have no business here. */
+function isPrivateHost(hostname) {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (host === '' || host === 'localhost') return true
+  if (host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.home.arpa')) {
+    return true
+  }
+  // A single label names a machine on the local network, never a publisher.
+  if (!host.includes('.') && !host.includes(':')) return true
+  if (/^[\d.]+$/.test(host) || host.includes(':')) return isPrivateAddress(host)
+  return false
+}
+
+/** The same classification for an address a DNS answer resolved to. */
+function isPrivateAddress(address) {
+  const value = String(address).toLowerCase()
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(value)
+  if (mapped !== null) return isPrivateAddress(mapped[1])
+  if (value.includes(':')) {
+    if (value === '::' || value === '::1') return true
+    if (/^f[cd][0-9a-f]{2}:/.test(value)) return true // fc00::/7 unique local
+    if (/^fe[89ab][0-9a-f]:/.test(value)) return true // fe80::/10 link local
+    return false
+  }
+  const parts = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(value)
+  if (parts === null) return true
+  const [a, b] = [Number(parts[1]), Number(parts[2])]
+  if (a === 0 || a === 10 || a === 127) return true
+  if (a === 169 && b === 254) return true
+  if (a === 172 && b >= 16 && b <= 31) return true
+  if (a === 192 && b === 168) return true
+  if (a === 100 && b >= 64 && b <= 127) return true
+  if (a >= 224) return true
+  return false
+}
+
+/**
+ * Normalize one publisher URL for the icon proxy, or return null when it is not
+ * a plain public web address. Every redirect hop and every icon candidate goes
+ * through this, so the route can never be steered at the Host's own network.
+ */
+function asIconTarget(raw) {
+  if (typeof raw !== 'string' || raw === '' || raw.length > 400) return null
+  let url
+  try {
+    url = new URL(raw)
+  } catch {
+    return null
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+  if (url.username !== '' || url.password !== '') return null
+  if (url.port !== '' && url.port !== '80' && url.port !== '443') return null
+  if (isPrivateHost(url.hostname)) return null
+  return url
+}
+
+const LINK_TAG = /<link\b[^>]*>/gi
+const LINK_ATTR = /([a-z][a-z0-9-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi
+
+/**
+ * `rel="icon"` declarations in a publisher page, best candidate first.
+ * Attributes are read with a small tokenizer instead of a DOM dependency, and
+ * `data:` or mask icons are ignored: neither renders in a plain `<img>`.
+ */
+function parseIconLinks(html, base) {
+  const found = []
+  for (const tag of html.match(LINK_TAG) ?? []) {
+    const attrs = {}
+    LINK_ATTR.lastIndex = 0
+    let match
+    while ((match = LINK_ATTR.exec(tag)) !== null) {
+      attrs[match[1].toLowerCase()] = match[2] ?? match[3] ?? match[4] ?? ''
+    }
+    const rel = (attrs.rel ?? '').toLowerCase()
+    if (!rel.includes('icon') || rel.includes('mask-icon')) continue
+    const href = (attrs.href ?? '').replace(/&amp;/gi, '&').trim()
+    if (href === '' || href.toLowerCase().startsWith('data:')) continue
+    // `href="static/icon.ico"` is invalid but common: resolve it both against the
+    // document and against the site root, which is what the author meant.
+    const guesses = []
+    try {
+      guesses.push(new URL(href, base.href))
+    } catch {
+      // A malformed href contributes nothing.
+    }
+    if (!href.startsWith('/') && !/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+      try {
+        guesses.push(new URL(`/${href}`, base.origin))
+      } catch {
+        // Same: skip the guess.
+      }
+    }
+    const largest = Math.max(
+      0,
+      ...[...((attrs.sizes ?? '').toLowerCase()).matchAll(/(\d+)x(\d+)/g)].map((size) => Number(size[1])),
+    )
+    const appleTouch = rel.includes('apple-touch-icon')
+    const score = (appleTouch ? 2 : 1) + (largest >= 120 ? 2 : largest >= 32 ? 1 : 0)
+    for (const url of guesses) {
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') continue
+      found.push({ href: url.href, score, largest })
+    }
+  }
+  found.sort((left, right) => right.score - left.score || right.largest - left.largest)
+  return [...new Set(found.map((entry) => entry.href))]
+}
+
+/**
+ * Try the conventional path first, then whatever the page declares, then the
+ * same publisher under the other `www.` spelling: several sites serve their
+ * favicon only on the hostname their feed entry does not use.
+ */
+function iconCandidates(page, html) {
+  const alternate = page.hostname.startsWith('www.')
+    ? `${page.protocol}//${page.hostname.slice(4)}`
+    : `${page.protocol}//www.${page.hostname}`
+  const candidates = [`${page.origin}/favicon.ico`, ...parseIconLinks(html, page)]
+  for (const root of [page.origin, alternate]) candidates.push(`${root}/favicon.ico`, `${root}/apple-touch-icon.png`)
+  return [...new Set(candidates)]
+}
+
+/** Drop a response body we are not going to read. */
+async function discard(response) {
+  try {
+    await response.body?.cancel?.()
+  } catch {
+    // The stream is already closed or never opened; nothing to release.
+  }
+}
+
+/** Read a response body, refusing anything past `maxBytes` instead of buffering it. */
+async function readCapped(response, maxBytes) {
+  if (response.body === null) return null
+  const declared = Number(response.headers.get('content-length') ?? '0')
+  if (Number.isFinite(declared) && declared > maxBytes) return null
+  const chunks = []
+  let size = 0
+  for await (const chunk of response.body) {
+    const view = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk)
+    size += view.byteLength
+    if (size > maxBytes) return null
+    chunks.push(view)
+  }
+  return Buffer.concat(chunks, size)
+}
+
+/**
+ * Fetch one icon hop sequence under the proxy's limits: no automatic redirects
+ * (each hop is re-validated), no cookies, a hard deadline, and a browser UA.
+ */
+async function fetchGuarded(start, signal, accept) {
+  let current = start
+  for (let hop = 0; hop <= ICON_REDIRECT_LIMIT; hop += 1) {
+    const response = await fetch(current.href, {
+      signal,
+      redirect: 'manual',
+      headers: { accept, 'user-agent': BROWSER_UA },
+    })
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location')
+      await discard(response)
+      if (location === null) return null
+      let next
+      try {
+        next = new URL(location, current)
+      } catch {
+        return null
+      }
+      const checked = asIconTarget(next.href)
+      if (checked === null) return null
+      current = checked
+      continue
+    }
+    if (!response.ok) {
+      await discard(response)
+      return null
+    }
+    return { response, url: current }
+  }
+  return null
+}
+
+/** Fail closed when a name resolves anywhere on the local network. */
+async function resolvesPublic(hostname, lookup) {
+  if (/^[\d.]+$/.test(hostname) || hostname.includes(':')) return !isPrivateAddress(hostname)
+  let addresses
+  try {
+    addresses = await lookup(hostname, { all: true, verbatim: true })
+  } catch {
+    return false
+  }
+  if (!Array.isArray(addresses) || addresses.length === 0) return false
+  return addresses.every((entry) => typeof entry.address === 'string' && !isPrivateAddress(entry.address))
+}
+
 export const name = 'shellpulse-news'
-export const inject = ['webServer']
+export const inject = ['webServer', 'connection']
 
 /**
  * Register the same-origin proxy.
- * @param ctx - the plugin context; `webServer` is the Host HTTP server.
+ * @param ctx - the plugin context; `webServer` is the Host HTTP server and
+ *   `connection` supplies the Host/Origin fence and browser authentication that
+ *   every route passes before it reads anything.
  * @param config - row config from `cordis.patch.yml` (`apiBase`, `cacheSeconds`).
  */
 export function apply(ctx, config) {
@@ -49,6 +263,8 @@ export function apply(ctx, config) {
   const log = ctx.logger
   const cache = new Map() // key -> { expires, status, body, retryAfter }
   const inflight = new Map() // key -> Promise<entry>
+  // Test seam: the icon route's DNS policy is exercised with a stub resolver.
+  const iconLookup = typeof settings.iconLookup === 'function' ? settings.iconLookup : dnsLookup
 
   const resolveRoute = (url) => {
     const path = url.pathname.startsWith('/shellpulse') ? url.pathname.slice('/shellpulse'.length) : ''
@@ -86,7 +302,7 @@ export function apply(ctx, config) {
     try {
       const response = await fetch(upstreamUrl, {
         signal: controller.signal,
-        headers: { accept: 'application/json', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+        headers: { accept: 'application/json', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
       })
       const body = await response.text()
       if (body.length > MAX_BYTES) throw new Error('upstream response too large')
@@ -122,6 +338,15 @@ export function apply(ctx, config) {
   }
 
   const handle = async (req, res) => {
+    // Connection's Host/Origin fence plus browser authentication: every route
+    // below answers only to this Harness page, so a page the user happens to have
+    // open elsewhere cannot call the proxy. Same check the Host's own routes use.
+    const rejection = ctx.connection.requestRejection(req)
+    if (rejection !== undefined) {
+      fail(res, rejection, rejection === 403 ? 'forbidden' : 'unauthorized')
+      return
+    }
+
     let url
     try {
       url = new URL(req.url ?? '/', 'http://shellpulse.invalid')
@@ -132,6 +357,11 @@ export function apply(ctx, config) {
 
     if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/shellpulse/img') {
       await handleImage(req, res, url)
+      return
+    }
+
+    if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/shellpulse/icon') {
+      await handleIcon(req, res, url)
       return
     }
 
@@ -205,7 +435,7 @@ export function apply(ctx, config) {
     try {
       const response = await fetch(`${apiBase}/api/item/${encodeURIComponent(id)}`, {
         signal: controller.signal,
-        headers: { accept: 'application/json', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+        headers: { accept: 'application/json', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
       })
       if (!response.ok) return null
       return await response.json()
@@ -323,7 +553,7 @@ export function apply(ctx, config) {
     try {
       const response = await fetch(target.href, {
         signal: controller.signal,
-        headers: { accept: 'image/*', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+        headers: { accept: 'image/*', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
       })
       if (!response.ok) {
         fail(res, 502, 'image_unavailable')
@@ -360,6 +590,107 @@ export function apply(ctx, config) {
     }
   }
 
+  const iconCache = new Map() // origin -> { expires, entry: { type, body, href } | null }
+  const iconInflight = new Map()
+
+  const sendIcon = (req, res, entry, fromCache) => {
+    res.writeHead(200, {
+      'content-type': entry.type,
+      'content-length': entry.body.length,
+      'cache-control': 'public, max-age=604800, immutable',
+      'x-content-type-options': 'nosniff',
+      'x-shellpulse-icon': entry.href,
+      ...(fromCache ? { 'x-shellpulse-cache': 'hit' } : {}),
+    })
+    if (req.method === 'HEAD') {
+      res.end()
+      return
+    }
+    res.end(entry.body)
+  }
+
+  /** Discover one publisher's icon: page declarations, then the conventional paths. */
+  const findIcon = async (page) => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), ICON_TIMEOUT_MS)
+    try {
+      let html = ''
+      try {
+        const landing = await fetchGuarded(page, controller.signal, 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.1')
+        const type = landing === null ? '' : (landing.response.headers.get('content-type') ?? '').toLowerCase()
+        if (landing !== null && type.includes('html')) {
+          const bytes = await readCapped(landing.response, ICON_PAGE_MAX_BYTES)
+          if (bytes !== null) html = bytes.toString('utf8')
+        } else if (landing !== null) {
+          await discard(landing.response)
+        }
+      } catch (error) {
+        log?.warn?.(`[shellpulse-news] icon page failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+
+      for (const candidate of iconCandidates(page, html)) {
+        const target = asIconTarget(candidate)
+        if (target === null) continue
+        let got
+        try {
+          got = await fetchGuarded(target, controller.signal, 'image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.9')
+        } catch {
+          continue
+        }
+        if (got === null) continue
+        const type = (got.response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
+        if (!type.startsWith('image/')) {
+          await discard(got.response)
+          continue
+        }
+        const body = await readCapped(got.response, ICON_MAX_BYTES)
+        if (body === null || body.length === 0) continue
+        return { type, body, href: got.url.href }
+      }
+      return null
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  const handleIcon = async (req, res, url) => {
+    const page = asIconTarget(url.searchParams.get('u') ?? '')
+    if (page === null) {
+      fail(res, 403, 'forbidden')
+      return
+    }
+    const key = page.origin
+    const hit = iconCache.get(key)
+    if (hit !== undefined && hit.expires > Date.now()) {
+      if (hit.entry === null) {
+        fail(res, 404, 'icon_unavailable')
+        return
+      }
+      sendIcon(req, res, hit.entry, true)
+      return
+    }
+
+    let pending = iconInflight.get(key)
+    if (pending === undefined) {
+      pending = (async () => {
+        if (!(await resolvesPublic(page.hostname, iconLookup))) return null
+        return findIcon(page)
+      })().finally(() => iconInflight.delete(key))
+      iconInflight.set(key, pending)
+    }
+    const entry = await pending
+    iconCache.set(key, { entry, expires: Date.now() + (entry === null ? ICON_MISS_TTL : ICON_CACHE_TTL) })
+    if (iconCache.size > ICON_CACHE_LIMIT) {
+      const oldest = iconCache.keys().next()
+      if (!oldest.done) iconCache.delete(oldest.value)
+    }
+    if (entry === null) {
+      fail(res, 404, 'icon_unavailable')
+      return
+    }
+    sendIcon(req, res, entry, false)
+  }
+
   const paperCache = new Map()
 
   const fetchCss = async (href, signal, depth = 0) => {
@@ -367,7 +698,7 @@ export function apply(ctx, config) {
     const url = href.startsWith('http') ? href : `https://arxiv.org${href.startsWith('/') ? '' : '/'}${href}`
     const response = await fetch(url, {
       signal,
-      headers: { accept: 'text/css', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+      headers: { accept: 'text/css', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
     })
     if (!response.ok) return ''
     let css = await response.text()
@@ -389,7 +720,7 @@ export function apply(ctx, config) {
     try {
       const abs = await fetch(`https://arxiv.org/abs/${arxivId}`, {
         signal,
-        headers: { accept: 'text/html', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+        headers: { accept: 'text/html', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
       })
       if (abs.ok) {
         const text = await abs.text()
@@ -402,7 +733,7 @@ export function apply(ctx, config) {
     const candidate = `https://arxiv.org/html/${arxivId}v${version ?? '1'}`
     const response = await fetch(candidate, {
       signal,
-      headers: { accept: 'text/html', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+      headers: { accept: 'text/html', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
     })
     if (!response.ok) return null
     const page = await response.text()
@@ -443,7 +774,7 @@ export function apply(ctx, config) {
       if (raw === null) {
         const response = await fetch(`https://ar5iv.labs.arxiv.org/html/${arxiv}`, {
           signal: controller.signal,
-          headers: { accept: 'text/html', 'user-agent': 'shellpulse-dsh-news/0.1.0' },
+          headers: { accept: 'text/html', 'user-agent': 'shellpulse-dsh-news/0.1.2' },
         })
         if (!response.ok) throw new Error('paper_unavailable')
         raw = await response.text()
@@ -504,31 +835,11 @@ export function apply(ctx, config) {
   const explainWindow = { startedAt: 0, count: 0 }
 
   const handleExplain = async (req, res) => {
-    // Only same-origin JSON requests may spend the user's model quota: a
-    // cross-site form/fetch cannot set this content type, and a browser request
-    // always carries an Origin that must match the Host it addressed.
+    // The route already passed Connection's fence, so only the wire shape is left:
+    // this action spends model quota, so it takes a JSON body, not a form post.
     const contentType = String(req.headers['content-type'] ?? '').toLowerCase()
     if (!contentType.startsWith('application/json')) {
       fail(res, 415, 'unsupported_media_type')
-      return
-    }
-    const origin = req.headers.origin
-    const host = req.headers.host
-    if (typeof origin === 'string' && host !== undefined) {
-      let originHost
-      try {
-        originHost = new URL(origin).host
-      } catch {
-        fail(res, 403, 'forbidden')
-        return
-      }
-      if (originHost !== host) {
-        fail(res, 403, 'forbidden')
-        return
-      }
-    }
-    if (req.headers['sec-fetch-site'] === 'cross-site') {
-      fail(res, 403, 'forbidden')
       return
     }
     const now = Date.now()

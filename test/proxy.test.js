@@ -4,10 +4,13 @@ import test from 'node:test'
 import { apply } from '../index.js'
 
 /** Install the proxy against a fake `ctx.webServer`, returning its handler. */
-function mount(config = {}) {
+function mount(config = {}, overrides = {}) {
   let handler
   const ctx = {
     logger: { warn() {} },
+    // The Host's connection service; a real one applies the Host/Origin fence and
+    // browser authentication, the double just says "admitted" unless a test says otherwise.
+    connection: { requestRejection: () => undefined, ...overrides.connection },
     effect: (fn) => {
       fn()
       return () => {}
@@ -256,21 +259,157 @@ test('refresh=1 bypasses the Host cache', async () => {
   )
 })
 
-test('explain rejects non-JSON and cross-origin requests', async () => {
+test('explain demands a JSON body once the fence has admitted the request', async () => {
   const handler = mount()
   const wrongType = await call(handler, '/shellpulse/explain', 'POST', { 'content-type': 'text/plain' })
   assert.equal(wrongType.status, 415)
 
-  const crossOrigin = await call(handler, '/shellpulse/explain', 'POST', {
-    'content-type': 'application/json',
-    origin: 'https://evil.test',
-    host: '127.0.0.1:1234',
+  const formPost = await call(handler, '/shellpulse/explain', 'POST', {
+    'content-type': 'application/x-www-form-urlencoded',
   })
-  assert.equal(crossOrigin.status, 403)
+  assert.equal(formPost.status, 415)
+})
 
-  const crossSite = await call(handler, '/shellpulse/explain', 'POST', {
-    'content-type': 'application/json',
-    'sec-fetch-site': 'cross-site',
-  })
-  assert.equal(crossSite.status, 403)
+test('resolves a declared icon when the conventional path is not an image', async () => {
+  const handler = mount({ iconLookup: async () => [{ address: '93.184.216.34', family: 4 }] })
+  const calls = []
+  const state = await withFetch(
+    async (input) => {
+      const url = String(input)
+      calls.push(url)
+      if (url === 'https://news.test/') {
+        return new Response('<link rel="icon" href="/static/icon.png" sizes="64x64">', {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        })
+      }
+      if (url === 'https://news.test/favicon.ico') {
+        return new Response('<html>app shell</html>', {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        })
+      }
+      if (url === 'https://news.test/static/icon.png') {
+        return new Response(new Uint8Array([137, 80, 78, 71]), {
+          status: 200,
+          headers: { 'content-type': 'image/png' },
+        })
+      }
+      return new Response('', { status: 404 })
+    },
+    () => call(handler, '/shellpulse/icon?u=https%3A%2F%2Fnews.test%2F'),
+  )
+
+  assert.equal(state.status, 200)
+  assert.equal(state.headers['content-type'], 'image/png')
+  assert.equal(state.headers['cache-control'], 'public, max-age=604800, immutable')
+  assert.ok(calls.includes('https://news.test/static/icon.png'))
+})
+
+test('refuses icon targets on the local network', async () => {
+  const handler = mount({ iconLookup: async () => [{ address: '10.0.0.5', family: 4 }] })
+  let fetched = 0
+  const fetchOnce = async () => {
+    fetched += 1
+    return new Response('', { status: 200 })
+  }
+
+  for (const target of [
+    'http%3A%2F%2Flocalhost%2F',
+    'http%3A%2F%2F127.0.0.1%2F',
+    'http%3A%2F%2F%5B%3A%3A1%5D%2F',
+    'file%3A%2F%2F%2Fetc%2Fpasswd',
+    'http%3A%2F%2Fintranet%2F',
+    'http%3A%2F%2Fnews.test%3A8080%2F',
+  ]) {
+    const state = await withFetch(fetchOnce, () => call(handler, `/shellpulse/icon?u=${target}`))
+    assert.equal(state.status, 403, target)
+  }
+
+  // A public name that resolves to a private address is refused before any fetch.
+  const privateName = await withFetch(fetchOnce, () => call(handler, '/shellpulse/icon?u=https%3A%2F%2Finternal.news.test%2F'))
+  assert.equal(privateName.status, 404)
+  assert.equal(fetched, 0)
+})
+
+test('caches a resolved icon per origin', async () => {
+  const handler = mount({ iconLookup: async () => [{ address: '93.184.216.34', family: 4 }] })
+  let pageHits = 0
+  const fetchIcon = async (input) => {
+    const url = String(input)
+    if (url === 'https://cache.test/') {
+      pageHits += 1
+      return new Response('<html><head></head></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })
+    }
+    if (url === 'https://cache.test/favicon.ico') {
+      return new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { 'content-type': 'image/x-icon' },
+      })
+    }
+    return new Response('', { status: 404 })
+  }
+
+  const first = await withFetch(fetchIcon, () => call(handler, '/shellpulse/icon?u=https%3A%2F%2Fcache.test%2F'))
+  const second = await withFetch(fetchIcon, () => call(handler, '/shellpulse/icon?u=https%3A%2F%2Fcache.test%2F%2Fanything'))
+  assert.equal(first.status, 200)
+  assert.equal(second.status, 200)
+  assert.equal(second.headers['x-shellpulse-cache'], 'hit')
+  assert.equal(pageHits, 1)
+})
+
+test('resolves a site-root-relative icon declaration', async () => {
+  const handler = mount({ iconLookup: async () => [{ address: '93.184.216.34', family: 4 }] })
+  const calls = []
+  const state = await withFetch(
+    async (input) => {
+      const url = String(input)
+      calls.push(url)
+      if (url === 'https://rel.test/topic/x/') {
+        return new Response('<link rel="shortcut icon" href="static/icon.ico"/>', {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        })
+      }
+      if (url === 'https://rel.test/static/icon.ico') {
+        return new Response(new Uint8Array([1, 2, 3, 4]), {
+          status: 200,
+          headers: { 'content-type': 'image/x-icon' },
+        })
+      }
+      return new Response('', { status: 404 })
+    },
+    () => call(handler, '/shellpulse/icon?u=https%3A%2F%2Frel.test%2Ftopic%2Fx%2F'),
+  )
+
+  assert.equal(state.status, 200)
+  assert.ok(calls.includes('https://rel.test/static/icon.ico'))
+})
+
+test('answers only after the connection fence admits the request', async () => {
+  for (const status of [403, 401]) {
+    const handler = mount({}, { connection: { requestRejection: () => status } })
+    let fetched = 0
+    const paths = [
+      ['/shellpulse/feed?view=all', 'GET'],
+      ['/shellpulse/img?u=https%3A%2F%2Farxiv.org%2Fa.png', 'GET'],
+      ['/shellpulse/icon?u=https%3A%2F%2Fnews.test%2F', 'GET'],
+      ['/shellpulse/explain', 'POST'],
+    ]
+    for (const [path, method] of paths) {
+      const state = await withFetch(
+        async () => {
+          fetched += 1
+          return new Response('{}', { status: 200 })
+        },
+        () => call(handler, path, method),
+      )
+      assert.equal(state.status, status, path)
+      assert.equal(JSON.parse(state.body).error, status === 403 ? 'forbidden' : 'unauthorized', path)
+    }
+    assert.equal(fetched, 0, 'a rejected request must not reach any upstream')
+  }
 })
