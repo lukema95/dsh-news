@@ -11,11 +11,28 @@
 
 ## 截图
 
-![新闻时间线：发布方图标、缩略图、热点与精选标签、AI 评分](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp)
-
-![arXiv 原文阅读：保留论文排版，选中文字可翻译或解释](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp)
-
-更多截图（热点榜、论文列表）见 [assets/screenshots](assets/screenshots)。
+<table>
+<tr>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp" alt="新闻时间线：发布方图标、缩略图、标签与 AI 评分" width="500" /></a><br/>
+<sub><b>新闻时间线</b> — 发布方图标、摘要缩略图、<code>热点</code> / <code>精选</code> 标签与 AI 评分。</sub>
+</td>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp" alt="热点榜：名次、热点标签与多来源计数" width="500" /></a><br/>
+<sub><b>热点榜</b> — 服务端 Top 20，带名次、热点标签与多来源计数。</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp" alt="论文标签只显示 arXiv 来源" width="500" /></a><br/>
+<sub><b>论文</b> — 只显示 arXiv 来源，可按 <code>cs.AI</code> / <code>cs.CL</code> / <code>cs.LG</code> 等分类筛选。</sub>
+</td>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp" alt="arXiv 原文阅读与划词翻译" width="500" /></a><br/>
+<sub><b>论文阅读</b> — arXiv 官方 HTML，保留论文排版，选中文字即可翻译或解释。</sub>
+</td>
+</tr>
+</table>
 
 ## 功能
 

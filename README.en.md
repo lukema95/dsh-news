@@ -11,11 +11,28 @@ The ShellPulse AI feed in your DSH right sidebar: the hot ranking, the latest ti
 
 ## Screenshots
 
-![Timeline with publisher icons, thumbnails, hot/featured flags and AI scores](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp)
-
-![arXiv HTML rendered with its own typography; select text to translate or explain](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp)
-
-More screenshots (hot ranking, papers list) in [assets/screenshots](assets/screenshots).
+<table>
+<tr>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp" alt="Timeline with publisher icons, thumbnails, flags and AI scores" width="500" /></a><br/>
+<sub><b>Timeline</b> — Publisher icons, summary thumbnails, <code>热点</code> / <code>精选</code> flags and AI scores.</sub>
+</td>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp" alt="Hot ranking with ranks, hot badges and multi-source counts" width="500" /></a><br/>
+<sub><b>Hot ranking</b> — The server's Top 20, with ranks, hot badges and multi-source counts.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp" alt="Papers tab showing arXiv sources only" width="500" /></a><br/>
+<sub><b>Papers</b> — arXiv sources only, filterable by <code>cs.AI</code> / <code>cs.CL</code> / <code>cs.LG</code>.</sub>
+</td>
+<td width="50%" valign="top">
+<a href="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp"><img src="https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp" alt="arXiv HTML with selection translate and explain" width="500" /></a><br/>
+<sub><b>Paper reader</b> — arXiv's own HTML, typography intact; select text to translate or explain.</sub>
+</td>
+</tr>
+</table>
 
 ## What it does
 
