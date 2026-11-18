@@ -11,13 +11,13 @@
 
 ## 截图
 
-| 新闻时间线 | 热点榜 |
-| :---: | :---: |
-| ![新闻时间线：列表行带发布方图标、缩略图、AI 评分](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp) | ![热点榜：带名次、热点标签与多来源计数](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp) |
+![新闻时间线：列表行带发布方图标、缩略图与 AI 评分](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp)
 
-| 论文（仅 arXiv） | 论文原文 + 划词翻译与解释 |
-| :---: | :---: |
-| ![论文标签只显示 arXiv 来源](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp) | ![arXiv 原文阅读，选中文字后可翻译或解释](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp) |
+![热点榜：带名次、热点标签与多来源计数](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp)
+
+![论文标签只显示 arXiv 来源](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp)
+
+![arXiv 原文阅读：保留论文排版，选中文字可翻译或解释](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp)
 
 ## 功能
 

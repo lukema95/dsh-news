@@ -11,13 +11,13 @@ The ShellPulse AI feed in your DSH right sidebar: the hot ranking, the latest ti
 
 ## Screenshots
 
-| Timeline | Hot ranking |
-| :---: | :---: |
-| ![Timeline rows with publisher icons, thumbnails and AI scores](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp) | ![Hot ranking with ranks, hot badges and multi-source counts](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp) |
+![Timeline rows with publisher icons, thumbnails and AI scores](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp)
 
-| Papers (arXiv only) | Paper reader with selection translate/explain |
-| :---: | :---: |
-| ![The papers tab shows arXiv sources only](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp) | ![arXiv HTML rendered with its own typography, with translate and explain actions](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp) |
+![Hot ranking with ranks, hot badges and multi-source counts](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp)
+
+![The papers tab shows arXiv sources only](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp)
+
+![arXiv HTML rendered with its own typography; select text to translate or explain](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp)
 
 ## What it does
 
