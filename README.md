@@ -11,13 +11,11 @@
 
 ## 截图
 
-![新闻时间线：列表行带发布方图标、缩略图与 AI 评分](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp)
-
-![热点榜：带名次、热点标签与多来源计数](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/hot-ranking.webp)
-
-![论文标签只显示 arXiv 来源](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/papers-arxiv.webp)
+![新闻时间线：发布方图标、缩略图、热点与精选标签、AI 评分](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/news-list.webp)
 
 ![arXiv 原文阅读：保留论文排版，选中文字可翻译或解释](https://raw.githubusercontent.com/lukema95/dsh-news/main/assets/screenshots/paper-reader.webp)
+
+更多截图（热点榜、论文列表）见 [assets/screenshots](assets/screenshots)。
 
 ## 功能
 
